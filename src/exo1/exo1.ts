@@ -4,10 +4,11 @@
 // - Either
 // - TaskEither
 
-import { Either } from 'fp-ts/Either';
-import { Option } from 'fp-ts/Option';
-import { TaskEither } from 'fp-ts/TaskEither';
-import { unimplemented, sleep, unimplementedAsync } from '../utils';
+import { Either, fromOption } from 'fp-ts/Either';
+import { Option, fromPredicate, map } from 'fp-ts/Option';
+import { TaskEither, tryCatch } from 'fp-ts/TaskEither';
+import { flow, pipe } from 'fp-ts/lib/function';
+import { sleep } from '../utils';
 
 export const divide = (a: number, b: number): number => {
   return a / b;
@@ -24,8 +25,12 @@ export const divide = (a: number, b: number): number => {
 // - `option.some(value)`
 // - `option.none`
 
-export const safeDivide: (a: number, b: number) => Option<number> =
-  unimplemented;
+export const safeDivide: (a: number, b: number) => Option<number> = (a, b) =>
+  pipe(
+    b,
+    fromPredicate(n => n !== 0),
+    map(b => a / b),
+  );
 
 // You probably wrote `safeDivide` using `if` statements and it's perfectly valid!
 // There are ways to not use `if` statements.
@@ -58,7 +63,10 @@ export const DivisionByZero = 'Error: Division by zero' as const;
 export const safeDivideWithError: (
   a: number,
   b: number,
-) => Either<DivisionByZeroError, number> = unimplemented;
+) => Either<DivisionByZeroError, number> = flow(
+  safeDivide,
+  fromOption(() => DivisionByZero),
+);
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                TASKEITHER                                 //
@@ -86,4 +94,8 @@ export const asyncDivide = async (a: number, b: number) => {
 export const asyncSafeDivideWithError: (
   a: number,
   b: number,
-) => TaskEither<DivisionByZeroError, number> = unimplementedAsync;
+) => TaskEither<DivisionByZeroError, number> = (a, b) =>
+  tryCatch(
+    () => asyncDivide(a, b),
+    () => DivisionByZero,
+  );
