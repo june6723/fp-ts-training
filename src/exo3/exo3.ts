@@ -1,8 +1,12 @@
 // `fp-ts` training Exercise 3
 // Sort things out with `Ord`
 
-import { Option } from 'fp-ts/Option';
-import { unimplemented } from '../utils';
+import * as O from 'fp-ts/Option';
+import * as Ord from 'fp-ts/Ord';
+import * as RA from 'fp-ts/ReadonlyArray';
+import { pipe } from 'fp-ts/lib/function';
+import * as N from 'fp-ts/number';
+import * as S from 'fp-ts/string';
 
 // Have you ever looked at the methods provided by `fp-ts` own `Array` and
 // `ReadonlyArray` modules? They expose a load of functions to manipulate
@@ -36,11 +40,11 @@ import { unimplemented } from '../utils';
 
 export const sortStrings: (
   strings: ReadonlyArray<string>,
-) => ReadonlyArray<string> = unimplemented;
+) => ReadonlyArray<string> = RA.sort(S.Ord);
 
 export const sortNumbers: (
   numbers: ReadonlyArray<number>,
-) => ReadonlyArray<number> = unimplemented;
+) => ReadonlyArray<number> = RA.sort(N.Ord);
 
 ///////////////////////////////////////////////////////////////////////////////
 //                                REVERSE SORT                               //
@@ -57,7 +61,7 @@ export const sortNumbers: (
 
 export const sortNumbersDescending: (
   numbers: ReadonlyArray<number>,
-) => ReadonlyArray<number> = unimplemented;
+) => ReadonlyArray<number> = RA.sort(Ord.reverse(N.Ord));
 
 ///////////////////////////////////////////////////////////////////////////////
 //                            SORT OPTIONAL VALUES                           //
@@ -74,9 +78,8 @@ export const sortNumbersDescending: (
 // to take a look at `option.getOrd`.
 
 export const sortOptionalNumbers: (
-  optionalNumbers: ReadonlyArray<Option<number>>,
-) => ReadonlyArray<Option<number>> = unimplemented;
-
+  optionalNumbers: ReadonlyArray<O.Option<number>>,
+) => ReadonlyArray<O.Option<number>> = RA.sort(O.getOrd(N.Ord));
 ///////////////////////////////////////////////////////////////////////////////
 //                           SORT COMPLEX OBJECTS                            //
 ///////////////////////////////////////////////////////////////////////////////
@@ -96,16 +99,25 @@ export const sortOptionalNumbers: (
 
 export interface Person {
   readonly name: string;
-  readonly age: Option<number>;
+  readonly age: O.Option<number>;
 }
+
+const ordByName: Ord.Ord<Person> = pipe(
+  S.Ord,
+  Ord.contramap(p => p.name),
+);
+const ordByAge: Ord.Ord<Person> = pipe(
+  O.getOrd(N.Ord),
+  Ord.contramap(p => p.age),
+);
 
 export const sortPersonsByName: (
   persons: ReadonlyArray<Person>,
-) => ReadonlyArray<Person> = unimplemented;
+) => ReadonlyArray<Person> = RA.sort(ordByName);
 
 export const sortPersonsByAge: (
   persons: ReadonlyArray<Person>,
-) => ReadonlyArray<Person> = unimplemented;
+) => ReadonlyArray<Person> = RA.sort(ordByAge);
 
 ///////////////////////////////////////////////////////////////////////////////
 //                          COMBINE SORTING SCHEMES                          //
@@ -118,4 +130,4 @@ export const sortPersonsByAge: (
 
 export const sortPersonsByAgeThenByName: (
   persons: ReadonlyArray<Person>,
-) => ReadonlyArray<Person> = unimplemented;
+) => ReadonlyArray<Person> = RA.sortBy([ordByAge, ordByName]);
